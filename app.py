@@ -194,6 +194,8 @@ def profile_sidebar():
         value=str(profile.get("name", "")),
     )
 
+    st.sidebar.write("Current profile:", profile["name"])
+
     col1, col2 = st.sidebar.columns(2)
     with col1:
         profile["hype_min_energy"] = st.sidebar.slider(
@@ -220,8 +222,6 @@ def profile_sidebar():
         "Include Mixed playlist in views",
         value=bool(profile.get("include_mixed", True)),
     )
-
-    st.sidebar.write("Current profile:", profile["name"])
 
 
 def add_song_sidebar():
@@ -251,8 +251,16 @@ def add_song_sidebar():
         if title and artist:
             normalized = normalize_song(song)
             all_songs = st.session_state.songs[:]
-            all_songs.append(normalized)
-            st.session_state.songs = all_songs
+
+            already_exists = any(
+                existing["title"].lower() == normalized["title"].lower()
+                and existing["artist"].lower() == normalized["artist"].lower()
+                for existing in all_songs
+            )
+
+            if not already_exists:
+                all_songs.append(normalized)
+                st.session_state.songs = all_songs
 
 
 def playlist_tabs(playlists):
@@ -299,7 +307,7 @@ def lucky_section(playlists):
 
     mode = st.selectbox(
         "Pick from",
-        options=["any", "hype", "chill"],
+        options=["any", "hype", "chill", "mixed"],
         index=0,
     )
 
@@ -355,7 +363,11 @@ def history_section():
         return
 
     summary = history_summary(history)
-    st.write("Recent picks by mood:", summary)
+    st.write("Recent picks by mood:")
+    table_rows = [
+        {"Mood": mood, "Count": count} for mood, count in summary.items()
+    ]
+    st.table(table_rows)
 
     show_details = st.checkbox("Show full history")
     if show_details:
